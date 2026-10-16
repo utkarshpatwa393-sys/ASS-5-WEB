@@ -2,129 +2,67 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 function BreedsList() {
-  const [breeds, setBreeds] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [breeds, setBreeds] = useState([]); // list of breed names: ["hound", "husky", ...]
+  const [allBreedsData, setAllBreedsData] = useState({}); // full object from API
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
+  // Fetch all breeds on component mount
   useEffect(() => {
-    // Fetch all breeds from Dog CEO API
     fetch('https://dog.ceo/api/breeds/list/all')
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error('Failed to load breeds list');
-        }
-        return res.json();
-      })
+      .then((res) => res.json())
       .then((data) => {
-        // data.message is an object: { bulldog: ["boston", "french"], husky: [], ... }
-        const breedNames = Object.keys(data.message);
-        const formattedBreeds = breedNames.map((name) => ({
-          name: name,
-          subBreedsCount: data.message[name].length,
-        }));
-        setBreeds(formattedBreeds);
+        setAllBreedsData(data.message);
+        setBreeds(Object.keys(data.message)); // breed names list
         setLoading(false);
       })
       .catch((err) => {
-        setError(err.message || 'Error loading breeds');
+        console.error(err);
         setLoading(false);
       });
   }, []);
 
-  // Filter breeds based on user's search input
+  // Filter breeds matching the search text
   const filteredBreeds = breeds.filter((breed) =>
-    breed.name.toLowerCase().includes(searchTerm.toLowerCase().trim())
+    breed.toLowerCase().includes(search.toLowerCase().trim())
   );
 
+  if (loading) {
+    return <div className="loading-box">Loading all breeds... 🐾</div>;
+  }
+
   return (
-    <div className="breeds-page">
-      {/* Page Header */}
-      <div className="page-header">
-        <h1 className="page-title">Explore Dog Breeds 🐕</h1>
-        <p className="page-desc">
-          Browse through all dog breeds, check their sub-breeds, and view their photo gallery.
-        </p>
-      </div>
+    <div className="breeds-container">
+      <h1>All Dog Breeds 🐕</h1>
+      <p>Search and explore different breeds and their sub-breeds.</p>
 
-      {/* Search Bar & Result Counter */}
-      <div className="search-section">
-        <div className="search-input-wrapper">
-          <span className="search-icon">🔍</span>
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Search breed (e.g. bulldog, retriever, hound)..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        {!loading && !error && (
-          <div className="results-count">
-            Showing <strong>{filteredBreeds.length}</strong> of {breeds.length} breeds
+      {/* Search Bar */}
+      <input
+        type="text"
+        placeholder="Search breed by name (e.g. bulldog, hound)..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="search-input"
+      />
+
+      <p className="count-text">
+        Showing <strong>{filteredBreeds.length}</strong> of {breeds.length} breeds
+      </p>
+
+      {/* Grid of Breed Cards */}
+      <div className="breeds-grid">
+        {filteredBreeds.map((breed) => (
+          <div key={breed} className="breed-card">
+            <h3>{breed}</h3>
+            <p className="sub-count">
+              Sub-breeds: <strong>{allBreedsData[breed].length}</strong>
+            </p>
+            <Link to={`/breeds/${breed}`} className="btn-primary">
+              View Gallery ➔
+            </Link>
           </div>
-        )}
+        ))}
       </div>
-
-      {/* Loading State */}
-      {loading && (
-        <div className="state-container">
-          <div className="spinner"></div>
-          <p>Loading dog breeds... 🐾</p>
-        </div>
-      )}
-
-      {/* Error State */}
-      {error && (
-        <div className="error-box">
-          <p>{error}</p>
-        </div>
-      )}
-
-      {/* No Results Found */}
-      {!loading && !error && filteredBreeds.length === 0 && (
-        <div className="state-container">
-          <p style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>
-            No breeds found matching "<strong>{searchTerm}</strong>" 🐶
-          </p>
-          <button
-            className="btn-secondary"
-            onClick={() => setSearchTerm('')}
-          >
-            Clear Search
-          </button>
-        </div>
-      )}
-
-      {/* Breeds Cards Grid */}
-      {!loading && !error && (
-        <div className="breeds-grid">
-          {filteredBreeds.map((breed) => (
-            <div key={breed.name} className="breed-card">
-              <div>
-                <div className="breed-card-header">
-                  <h2 className="breed-name">{breed.name}</h2>
-                  <span className="breed-icon">🐾</span>
-                </div>
-                <div>
-                  {breed.subBreedsCount > 0 ? (
-                    <span className="badge badge-subbreed">
-                      {breed.subBreedsCount} sub-breed{breed.subBreedsCount > 1 ? 's' : ''}
-                    </span>
-                  ) : (
-                    <span className="badge badge-none">No sub-breeds</span>
-                  )}
-                </div>
-              </div>
-
-              <Link to={`/breeds/${breed.name}`} className="breed-link-btn">
-                <span>View Gallery & Info</span>
-                <span>➔</span>
-              </Link>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

@@ -2,25 +2,24 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 function Home() {
+  // State for dog image URL and loading status
   const [dogImage, setDogImage] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Function to fetch random dog image from API
-  const fetchRandomDog = () => {
+  // Fetch a random dog photo from the API
+  const fetchRandomDog = async () => {
     setLoading(true);
-    fetch('https://dog.ceo/api/breeds/image/random')
-      .then((res) => res.json())
-      .then((data) => {
-        setDogImage(data.message);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setLoading(false);
-      });
+    try {
+      const res = await fetch('https://dog.ceo/api/breeds/image/random');
+      const data = await res.json();
+      setDogImage(data.message);
+    } catch (err) {
+      console.error('Error fetching dog image:', err);
+    }
+    setLoading(false);
   };
 
-  // Run on page load
+  // Load initial dog photo on page load
   useEffect(() => {
     fetchRandomDog();
   }, []);
@@ -30,7 +29,7 @@ function Home() {
       <h1>Welcome to PawPedia 🐶</h1>
       <p>Discover dog breeds and explore their cute photo galleries.</p>
 
-      {/* Dog Photo Box */}
+      {/* Dog Photo Card */}
       <div className="dog-card">
         {loading ? (
           <div className="loading-box">Loading cute pup... 🐾</div>
@@ -38,7 +37,7 @@ function Home() {
           <img src={dogImage} alt="Random Dog" className="dog-image" />
         )}
 
-        {/* Buttons */}
+        {/* Action Buttons */}
         <div className="button-group">
           <button onClick={fetchRandomDog} className="btn-primary">
             🐶 New Dog Photo
@@ -53,3 +52,4 @@ function Home() {
 }
 
 export default Home;
+

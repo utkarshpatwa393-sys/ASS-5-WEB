@@ -2,52 +2,49 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 
 function BreedDetail() {
-  // Get breed name from URL parameter (:breed)
+  // Get the selected breed name from the URL path (:breed)
   const { breed } = useParams();
 
+  // State for sub-breeds, photo gallery, and loading statuses
   const [subBreeds, setSubBreeds] = useState([]);
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  // Fetch breed sub-breeds and initial 6 photos
+  // Load sub-breeds and initial 6 photos when the breed changes
   useEffect(() => {
-    setLoading(true);
+    const fetchBreedDetails = async () => {
+      setLoading(true);
+      try {
+        // 1. Fetch sub-breeds list
+        const subRes = await fetch(`https://dog.ceo/api/breed/${breed}/list`);
+        const subData = await subRes.json();
+        setSubBreeds(subData.message);
 
-    // 1. Fetch sub-breeds list
-    fetch(`https://dog.ceo/api/breed/${breed}/list`)
-      .then((res) => res.json())
-      .then((data) => {
-        setSubBreeds(data.message);
-      });
+        // 2. Fetch initial 6 photos
+        const photoRes = await fetch(`https://dog.ceo/api/breed/${breed}/images/random/6`);
+        const photoData = await photoRes.json();
+        setPhotos(photoData.message);
+      } catch (err) {
+        console.error('Error fetching breed details:', err);
+      }
+      setLoading(false);
+    };
 
-    // 2. Fetch 6 random photos
-    fetch(`https://dog.ceo/api/breed/${breed}/images/random/6`)
-      .then((res) => res.json())
-      .then((data) => {
-        setPhotos(data.message);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setLoading(false);
-      });
+    fetchBreedDetails();
   }, [breed]);
 
-  // Bonus: Load 6 more photos and add to gallery
-  const handleLoadMore = () => {
+  // Load 6 additional photos to append to the gallery
+  const handleLoadMore = async () => {
     setLoadingMore(true);
-    fetch(`https://dog.ceo/api/breed/${breed}/images/random/6`)
-      .then((res) => res.json())
-      .then((data) => {
-        // Append new images to existing photos array
-        setPhotos([...photos, ...data.message]);
-        setLoadingMore(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setLoadingMore(false);
-      });
+    try {
+      const res = await fetch(`https://dog.ceo/api/breed/${breed}/images/random/6`);
+      const data = await res.json();
+      setPhotos((prevPhotos) => [...prevPhotos, ...data.message]);
+    } catch (err) {
+      console.error('Error loading more photos:', err);
+    }
+    setLoadingMore(false);
   };
 
   if (loading) {
@@ -56,13 +53,14 @@ function BreedDetail() {
 
   return (
     <div className="detail-container">
+      {/* Back to Breeds List */}
       <Link to="/breeds" className="back-link">
         ← Back to All Breeds
       </Link>
 
       <h1 className="breed-title">{breed}</h1>
 
-      {/* Sub-breeds List */}
+      {/* Sub-breeds Section */}
       <div className="subbreeds-box">
         <h3>Sub-breeds ({subBreeds.length}):</h3>
         {subBreeds.length > 0 ? (
@@ -78,7 +76,7 @@ function BreedDetail() {
         )}
       </div>
 
-      {/* Photo Gallery */}
+      {/* Photo Gallery Grid */}
       <h2>Photo Gallery ({photos.length} photos)</h2>
       <div className="gallery-grid">
         {photos.map((photoUrl, index) => (
@@ -88,7 +86,7 @@ function BreedDetail() {
         ))}
       </div>
 
-      {/* Bonus button */}
+      {/* Load More Button */}
       <div className="center-btn">
         <button
           onClick={handleLoadMore}
@@ -103,3 +101,4 @@ function BreedDetail() {
 }
 
 export default BreedDetail;
+
